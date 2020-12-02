@@ -2,6 +2,7 @@
     // format citiri:
     formatCitireUnIntreg: .asciz "%d"
     formatCitireDoiIntregi: .asciz "%d %d"
+    formatAfisareDoiIntregi: .asciz "%d, %d \n"
 
     formatCerinta1SwitchMalitios: .asciz "switch malitios index %d:"
     formatCerinta1Host: .asciz " host index %d;"
@@ -13,21 +14,31 @@
     formatCerinta1SwitchController: .asciz " controller index %d;"
     
     formatAfisareCuSpatiuUnIntreg: .asciz "%d \n"
+    formatAfisareCerinta2UnHost: .asciz "host index %d; "
+    
+    contor: .long 0
     spatiu: .asciz "\n"
 
     
     
     matrix: .space 1600
     roles: .space 80
+    amVizitat: .space 80
+    coada: .space 240
+    prim: .space 4
+    ultim: .space 4
     role: .space 4
     n: .space 4
     cerinta: .space 4
     nrLegaturi: .space 4
+    nodActual: .space 4
     i: .space 4
     j: .space 4
 
     legatura1: .space 4
     legatura2: .space 4
+
+    cerinta2: .asciz "incepem cerinta 2"
 
 .text
 
@@ -125,6 +136,9 @@ et_citire_cerinta:
 
     cmpl $1, cerinta
     je cerinta_1
+
+    cmpl $2, cerinta
+    je cerinta_2
 
 cerinta_1:
     
@@ -271,7 +285,126 @@ cerinta_1:
                 incl i
                 jmp et_for_2
 
+// CERINTA 2:
 
+cerinta_2:
+
+    movl $1, prim
+    movl $1, ultim
+
+    lea coada, %edi
+    movl $1, %eax
+    movl $0, (%edi, %eax, 4)
+    // coada[1] = 0
+    
+    lea amVizitat, %edi
+    movl $0, %eax
+    movl $1, (%edi, %eax, 4)
+    // amVizitat[0] = 1
+
+    lea roles, %edi
+    movl $0, %eax
+    movl (%edi, %eax, 4), %ebx
+    // %ebx = roles[0]
+
+    cmpl $1, %ebx
+    je afisare_itself
+    jmp et_while
+
+    afisare_itself:
+        pushl $0
+        push $formatAfisareCerinta2UnHost
+        call printf
+        pop %ebx
+        popl %ebx
+
+        push $0
+        call fflush
+        pop %ebx
+
+    et_while:
+        movl prim, %eax
+        cmp %eax, ultim
+        jl final_cerinta_2
+        // daca ultim < prim => exit
+
+        lea coada, %edi
+        movl prim, %eax
+        movl (%edi, %eax, 4), %ebx
+        movl %ebx, nodActual
+        incl prim
+        // nodeActual = coada[prim]
+
+        movl $1, i
+        et_baby_for_2:
+
+            
+
+            movl n, %eax
+            cmp %eax, i
+            jg et_while
+
+            lea matrix, %edi
+            movl n, %eax
+            mull i
+            add nodActual, %eax
+
+            movl (%edi, %eax, 4), %ebx
+            // %ebx = matrix[i][nodActual]
+
+            
+
+            cmpl $1, %ebx
+            je first_condition_true
+
+            incl i
+            jmp et_baby_for_2
+
+            first_condition_true:
+
+                // nod actual = 0;
+
+                lea amVizitat, %edi
+                movl i, %eax
+                movl (%edi, %eax, 4), %ebx
+                // ebx = amVizitat[i]
+                cmpl $0, %ebx
+                je second_condition_true
+                incl i
+                jmp et_baby_for_2
+
+                
+
+                second_condition_true:
+                    // facem treaba
+                    pushl i
+                    pushl nodActual
+                    push $formatAfisareDoiIntregi
+                    call printf
+                    pop %ebx
+                    popl %ebx
+                    popl %ebx
+
+                    push $0
+                    call fflush
+                    pop %ebx
+
+                    lea amVizitat, %edi
+                    movl i, %eax
+                    movl $1, (%edi, %eax, 4)
+                    incl ultim
+                    lea coada, %edi
+                    movl ultim, %eax
+                    movl i, %ebx
+                    movl %ebx, (%edi, %eax, 4)
+                    incl i
+                    jmp et_baby_for_2
+
+
+
+final_cerinta_2:
+    jmp et_exit
+        
 
 et_exit:
     mov $1, %eax
