@@ -15,6 +15,8 @@
     
     formatAfisareCuSpatiuUnIntreg: .asciz "%d \n"
     formatAfisareCerinta2UnHost: .asciz "host index %d; "
+    yesCuLinieNoua: .asciz "\nYes"
+    noCuLinieNoua: .asciz "\nNo"
     
     contor: .long 0
     spatiu: .asciz "\n"
@@ -39,6 +41,13 @@
     legatura2: .space 4
 
     cerinta2: .asciz "incepem cerinta 2"
+
+    plecare: .space 4
+    destinatie: .space 4
+
+    cuvant: .space 1600
+    formatCitireCerinta3: .string "%d %d %s"
+    formatCerinta3TestString: .string "%s"
 
 .text
 
@@ -139,6 +148,9 @@ et_citire_cerinta:
 
     cmpl $2, cerinta
     je cerinta_2
+
+    cmpl $3, cerinta
+    je cerinta_3
 
 cerinta_1:
     
@@ -291,6 +303,7 @@ cerinta_2:
 
     movl $1, prim
     movl $1, ultim
+    incl contor
 
     lea coada, %edi
     movl $1, %eax
@@ -377,34 +390,218 @@ cerinta_2:
 
                 second_condition_true:
                     // facem treaba
-                    pushl i
-                    pushl nodActual
-                    push $formatAfisareDoiIntregi
-                    call printf
-                    pop %ebx
-                    popl %ebx
-                    popl %ebx
+                    // if roles[i] == 1 => cout
+                    lea roles, %edi
+                    mov i, %ebx
+                    movl (%edi, %ebx, 4), %ecx
+                    cmpl $1, %ecx
+                    je afisare_baby
+                    jmp treaba_man
+                    afisare_baby:
 
-                    push $0
-                    call fflush
-                    pop %ebx
+                        pushl i
+                        push $formatAfisareCerinta2UnHost
+                        call printf
+                        pop %ebx
+                        popl %ebx
 
-                    lea amVizitat, %edi
-                    movl i, %eax
-                    movl $1, (%edi, %eax, 4)
-                    incl ultim
-                    lea coada, %edi
-                    movl ultim, %eax
-                    movl i, %ebx
-                    movl %ebx, (%edi, %eax, 4)
-                    incl i
-                    jmp et_baby_for_2
+                        push $0
+                        call fflush
+                        pop %ebx
+                    treaba_man:
+                        incl contor
+
+                        lea amVizitat, %edi
+                        movl i, %eax
+                        movl $1, (%edi, %eax, 4)
+                        incl ultim
+                        lea coada, %edi
+                        movl ultim, %eax
+                        movl i, %ebx
+                        movl %ebx, (%edi, %eax, 4)
+                        incl i
+                        jmp et_baby_for_2
 
 
 
 final_cerinta_2:
-    jmp et_exit
+
+    movl contor, %ebx
+    cmpl n, %ebx
+    je afisam_yes
+
+    afisam_yes:
         
+        push $yesCuLinieNoua
+        call printf
+        pop %ebx
+
+        push $0
+        call fflush
+        pop %ebx
+
+        jmp et_exit
+
+    push $noCuLinieNoua
+    call printf
+    pop %ebx
+
+    push $0
+    call fflush
+    pop %ebx
+
+    jmp et_exit
+
+
+    jmp et_exit
+    
+
+cerinta_3:
+    push $cuvant
+    push $destinatie
+    push $plecare
+    push $formatCitireCerinta3
+    call scanf
+    pop %ebx
+    pop %ebx
+    pop %ebx
+    pop %ebx
+
+
+
+
+    movl $1, prim
+    movl $1, ultim
+    incl contor
+
+    lea coada, %edi
+    movl plecare, %eax
+    movl $0, (%edi, %eax, 4)
+    // coada[plecare] = 0
+    
+    lea amVizitat, %edi
+    movl plecare, %eax
+    movl $1, (%edi, %eax, 4)
+    // amVizitat[plecare] = 1
+
+    et_while_1:
+        movl prim, %eax
+        cmp %eax, ultim
+        jl final_cerinta_3
+        // daca ultim < prim => exit
+
+        lea coada, %edi
+        movl prim, %eax
+        movl (%edi, %eax, 4), %ebx
+        movl %ebx, nodActual
+        incl prim
+        // nodeActual = coada[prim]
+
+        movl $1, i
+        et_baby_for_2_1:
+
+            
+
+            movl n, %eax
+            cmp %eax, i
+            jg et_while_1
+
+            lea matrix, %edi
+            movl n, %eax
+            mull i
+            add nodActual, %eax
+
+            movl (%edi, %eax, 4), %ebx
+            // %ebx = matrix[i][nodActual]
+
+            
+
+            cmpl $1, %ebx
+            je first_condition_true_1
+
+            incl i
+            jmp et_baby_for_2_1
+
+            first_condition_true_1:
+
+                // nod actual = 0;
+
+                lea amVizitat, %edi
+                movl i, %eax
+                movl (%edi, %eax, 4), %ebx
+                // ebx = amVizitat[i]
+                cmpl $0, %ebx
+                je second_condition_true_1
+                incl i
+                jmp et_baby_for_2_1
+
+                
+
+                second_condition_true_1:
+                    // facem treaba
+                    // if roles[i] != 3 => cout
+                    lea roles, %edi
+                    mov i, %ebx
+                    movl (%edi, %ebx, 4), %ecx
+                    cmpl $3, %ecx
+                    jl treaba_man_1
+                    jg treaba_man_1
+
+                    incl i
+                    jmp et_baby_for_2_1
+                    
+                    treaba_man_1:
+                        incl contor
+
+                        lea amVizitat, %edi
+                        movl i, %eax
+                        movl $1, (%edi, %eax, 4)
+                        incl ultim
+                        lea coada, %edi
+                        movl ultim, %eax
+                        movl i, %ebx
+                        movl %ebx, (%edi, %eax, 4)
+                        incl i
+                        jmp et_baby_for_2_1
+
+    
+
+final_cerinta_3:
+    lea amVizitat, %edi
+    movl destinatie, %ebx
+    movl (%edi, %ebx, 4), %eax
+
+    cmpl $1, %eax
+    je afisare_curat
+
+
+    lea cuvant, %edi
+    movl $0, %ecx
+
+    et_for_string:
+        movb (%edi, %ecx, 1), %al
+        // opresc parcurgerea cat %al == 0
+        // i.e. cand ajung pe terminatorul de sir, \0
+        cmp $0, %al
+        je afisare_curat
+        // modific %al (byte-ul curent) si apoi modific in memorie
+        addb $-10, %al
+        movb %al, (%edi, %ecx, 1)
+        addl $1, %ecx
+        jmp et_for_string
+
+
+    afisare_curat:
+        push $cuvant
+        push $formatCerinta3TestString
+        call printf
+        pop %ebx
+        pop %ebx
+
+        push $0
+        call fflush
+        pop %ebx
+
 
 et_exit:
     mov $1, %eax
